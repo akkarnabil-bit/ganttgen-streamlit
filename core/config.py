@@ -28,5 +28,5 @@ CHART_BG_PAPER    = "#ffffff"
 CHART_GRID_COLOR  = "#ececec"
 CHART_ROW_HEIGHT  = 45   # pixels per task row
 CHART_MIN_HEIGHT  = 420  # minimum chart height in pixels
-CHART_PROGRESS_FILL = "rgba(0,0,0,0.25)"
+CHART_PROGRESS_FILL = "rgba(0,0,0,0.10)"
 TODAY_LINE_COLOR  = "#e74c3c"

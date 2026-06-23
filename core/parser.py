@@ -1,4 +1,5 @@
 # core/parser.py
+# core/parser.py
 import io
 from typing import Union
 
@@ -58,11 +59,14 @@ def _check_required_columns(df: pd.DataFrame) -> None:
 def _parse_dates(df: pd.DataFrame) -> pd.DataFrame:
     for col in ("Début", "Fin"):
         try:
-            df[col] = pd.to_datetime(df[col], dayfirst=True)
+            df[col] = pd.to_datetime(df[col], infer_datetime_format=True, dayfirst=True)
         except Exception:
-            raise ValidationError(
-                f"La colonne '{col}' contient des dates invalides."
-            )
+            try:
+                df[col] = pd.to_datetime(df[col], format="%Y-%m-%d")
+            except Exception:
+                raise ValidationError(
+                    f"La colonne '{col}' contient des dates invalides."
+                )
     return df
 
 

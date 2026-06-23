@@ -7,18 +7,11 @@ from core.config import (
     STATUT_COLORS, DEFAULT_STATUS_COLOR, COLOR_BY_PRIORITY,
     CHART_FONT_FAMILY, CHART_FONT_SIZE, CHART_BG_PLOT, CHART_BG_PAPER,
     CHART_GRID_COLOR, CHART_ROW_HEIGHT, CHART_MIN_HEIGHT,
-    CHART_PROGRESS_FILL, TODAY_LINE_COLOR,
+    TODAY_LINE_COLOR,
 )
 
 
 def _resolve_color_by(df: pd.DataFrame, requested: str) -> str:
-    """
-    Return the requested color_by column if it exists in df.
-    Otherwise fall back to the first available column in COLOR_BY_PRIORITY.
-    Raises ValueError only if none of the priority columns exist at all.
-
-    Fix #1 — previously always fell back to "Responsable" even when absent.
-    """
     if requested in df.columns:
         return requested
 
@@ -36,20 +29,13 @@ def generate_gantt(
     show_today: bool = True,
     show_legend: bool = True,
 ) -> "plotly.graph_objects.Figure":
-    """
-    Build an interactive Plotly Gantt chart from a validated DataFrame.
 
-    Improvements applied vs. the original:
-      #1  Robust color_by fallback (see _resolve_color_by).
-      #2  progress bar safe for same-day tasks (total_days = max(1, …)).
-      #3  Label column built with string concat instead of slow apply().
-    """
     df = df.copy()
 
     # Fix #1 — safe color column resolution
     color_by = _resolve_color_by(df, color_by)
 
-    # Fix #3 — vectorised label, ~10× faster than apply() on large frames
+    # Fix #3 — vectorised label
     df["_label"] = df["Tâche"] + " (" + df["Avancement"].astype(str) + "%)"
 
     color_map = None
@@ -80,22 +66,23 @@ def generate_gantt(
 
     fig.update_yaxes(autorange="reversed")
 
-    # Progress-bar overlay
-    for i, row in df.iterrows():
+    # Progress line overlay
+    labels = df["_label"].tolist()
+    for i, (_, row) in enumerate(df.iterrows()):
         if row["Avancement"] > 0:
             # Fix #2 — avoid division by zero for same-day tasks
             total_days = max(1, (row["Fin"] - row["Début"]).days)
-            progress_end = row["Début"] + pd.Timedelta(
+            progress_point = row["Début"] + pd.Timedelta(
                 days=total_days * row["Avancement"] / 100
             )
             fig.add_shape(
-                type="rect",
+                type="line",
                 x0=row["Début"],
-                x1=progress_end,
-                y0=i - 0.4,
-                y1=i + 0.4,
-                fillcolor=CHART_PROGRESS_FILL,
-                line_width=0,
+                x1=progress_point,
+                y0=labels[i],
+                y1=labels[i],
+                yref="y",
+                line=dict(color="#f39c12", width=4),
                 layer="above",
             )
 
